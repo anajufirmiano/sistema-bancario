@@ -18,7 +18,8 @@ import requests
 
 # CPF: Ferramenta da biblioteca 'validate_docbr' que valida e formata CPFs matematicamente.
 from validate_docbr import CPF
-
+import random
+import string
 
 # ==============================================================================
 #                  FUNÇÕES DE CONSULTA, TRATAMENTO E VALIDAÇÃO
@@ -143,11 +144,13 @@ def salvar_no_csv(cliente: dict):
     pasta_script = Path(__file__).resolve().parent
     arquivo_csv = pasta_script / 'clientescadastrados.csv'
 
-    # Verifica se o arquivo ainda não existe ou se o tamanho dele é 0 bytes (vazio)
-    precisa_cabecalho = not arquivo_csv.exists() or arquivo_csv.stat().st_size == 0
+    # Verifica se o arquivo precisa de cabeçalho:
+    # Se ele não existir ou se não tiver nenhum texto real (ignora espaços, quebras de linha e o BOM invisível de 3 bytes do UTF-8)
+    precisa_cabecalho = not arquivo_csv.exists() or not arquivo_csv.read_text(encoding='utf-8-sig').strip()
 
     # Nomes das colunas da tabela
     colunas = [
+        'Conta',
         'Nome Completo',
         'Sexo',
         'Data de Nascimento',
@@ -172,6 +175,7 @@ def salvar_no_csv(cliente: dict):
 
         # Grava a linha contendo todas as informações do cliente cadastrado
         escritor.writerow([
+            cliente['conta'],
             cliente['nome'],
             cliente['sexo'],
             cliente['nascimento'],
@@ -185,10 +189,14 @@ def salvar_no_csv(cliente: dict):
             cliente['cep'],
             cliente['endereco'],
         ])
-
+# ==============================================================================
+#                           CRIAR NÚMERO DA CONTA
+# ==============================================================================
+def numero_conta():
+    return "".join(random.choices(string.digits, k=10))
 
 # ==============================================================================
-# FLUXO PRINCIPAL DO PROGRAMA (MAIN)
+#                    FLUXO PRINCIPAL DO PROGRAMA (MAIN)
 # ==============================================================================
 
 def main():
@@ -201,7 +209,7 @@ def main():
     print('=' * 50)
 
     # --------------------------------------------------
-    # 1. NOME COMPLETO
+    # 1.                NOME COMPLETO
     # --------------------------------------------------
     # .strip() remove espaços acidentais no início/fim; .title() deixa as iniciais maiúsculas
     while True:
@@ -212,7 +220,7 @@ def main():
             print('O nome não pode ficar em branco.')
 
     # --------------------------------------------------
-    # 2. SEXO
+    # 2.                   SEXO
     # --------------------------------------------------
     # Usamos um dicionário para mapear o número digitado para o texto por extenso
     opcoes_sexo = {'1': 'Feminino', '2': 'Masculino'}
@@ -226,7 +234,7 @@ def main():
         sleep(1)
 
     # --------------------------------------------------
-    # 3. DATA DE NASCIMENTO E CÁLCULO DE IDADE
+    # 3.    DATA DE NASCIMENTO E CÁLCULO DE IDADE
     # --------------------------------------------------
     while True:
         nascimento = input('\nData de nascimento (DD/MM/AAAA): ').strip()
@@ -266,7 +274,7 @@ def main():
                 print('O nome do responsável é obrigatório para menores de 18 anos.')
 
     # --------------------------------------------------
-    # 4. E-MAIL
+    # 4.                   E-MAIL
     # --------------------------------------------------
     # Validação simples verificando a presença de '@' e '.' no e-mail
     while True:
@@ -343,6 +351,7 @@ def main():
     # --------------------------------------------------
     # Agrupamos todas as respostas coletadas em um dicionário organizado
     cliente = {
+        'conta': numero_conta(),
         'nome': nome_completo,
         'sexo': sexo,
         'nascimento': nascimento,
